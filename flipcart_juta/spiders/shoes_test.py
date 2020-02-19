@@ -1,9 +1,16 @@
 # -*- coding: utf-8 -*-
+import json
+
 import scrapy
 from bs4 import BeautifulSoup
 import requests
 
+from flipcart_juta.utils.fetch import get_shoe_variant_json_data, get_shoe_template_json_date
+
 filpcart = 'https://www.flipkart.com'
+
+write_file = open("products.json", "w+")
+log_file = open("log.txt", "w+")
 
 class ShoesSpider(scrapy.Spider):
     all_urls = []
@@ -41,9 +48,13 @@ class ShoesSpider(scrapy.Spider):
         #     pass
 
     def parse_items(self, response):
+        global product
+        total_products = []
+        all_products = []
+       
         title = response.css('._35KyD6 ::text').extract_first()
         # print("from parse items:", response.request.url)
-        mother_url = response.request.url
+        product_parent_url = response.request.url
         # print(title)
 
         # all_urls_colors_size = response.css('._2UBURg a ::attr("href")').extract()
@@ -51,7 +62,7 @@ class ShoesSpider(scrapy.Spider):
         # print(len(all_urls_colors_size))
         # for i in all_urls_colors_size:
         #     print(filpcart+str(i))
-
+        product_variants_list = []
         color_size_component = response.css('.fUBI-_').extract()
         if len(color_size_component) == 2:
             color_comp = response.css('.fUBI-_')[0]
@@ -76,11 +87,14 @@ class ShoesSpider(scrapy.Spider):
                     #
                     print(len(size_urls))
                     for size_url in size_urls:
-                        print("csb:", filpcart+str(size_url['href']))
+                        product_variants_list.append(get_shoe_variant_json_data(filpcart + str(size_url['href'])))
+
+                        # print("csb:", filpcart+str(size_url['href']))
                 except Exception as e:
                     pass
-
-
+            product = get_shoe_template_json_date(title,product_parent_url,product_variants_list)
+            total_products.append(product)
+            
                 # print(filpcart+str(color_url))
                 # yield response.follow(filpcart + str(color_url), callback=self.parse_size_urls, meta={'title': title, 'mother_url': mother_url})
         if len(color_size_component) == 1:
@@ -90,10 +104,16 @@ class ShoesSpider(scrapy.Spider):
 
             print(len(size_urls))
             for size_url in size_urls:
-                print("so:", filpcart + str(size_url))
+                product_variants_list.append(get_shoe_variant_json_data(filpcart + str(size_url['href'])))
+                # print(json.dumps(get_shoe_variant_json_data(filpcart + str(size_url['href'])), indent=4, sort_keys=True))
+                # print("shoe:", filpcart + str(size_url))
+            product = get_shoe_template_json_date(title, product_parent_url, product_variants_list)
+            total_products.append(product)
         else:
             pass
-
+            
+        # print(json.dumps(total_products, indent=4, sort_keys=True))
+        json.dump({"Products": total_products}, write_file, sort_keys=True, indent=4, separators=(',', ': '))
     # def parse_size_urls(self, response):
     #     mother_url = response.meta['mother_url']
     #     title = response.meta['title']
@@ -104,6 +124,3 @@ class ShoesSpider(scrapy.Spider):
     #     print(len(size_urls))
     #     for size_url in size_urls:
     #         print("csb:", filpcart+str(size_url))
-
-
-

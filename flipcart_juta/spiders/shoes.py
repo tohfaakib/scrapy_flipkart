@@ -3,6 +3,7 @@ import scrapy
 
 filpcart = 'https://www.flipkart.com'
 
+
 class ShoesSpider(scrapy.Spider):
     all_urls = []
     name = 'shoes'
